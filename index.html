@@ -3,69 +3,94 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DueSense - chase the right invoices first</title>
 <style>
-:root{--bg:#f2f5f7;--ink:#14232e;--mut:#5b6b77;--card:#fff;--line:#d9e1e7;--teal:#0f766e;--amb:#b45309;--red:#b42318}
-@media(prefers-color-scheme:dark){:root{--bg:#0f1a22;--ink:#e8eef2;--mut:#98a8b4;--card:#16242e;--line:#27394519;--teal:#2dd4bf;--amb:#fbbf24;--red:#f87171}}
+:root{--bg:#f2f5f7;--ink:#14232e;--mut:#5b6b77;--card:#fff;--line:#d9e1e7;--teal:#0f766e;--amb:#b45309;--red:#b42318;--grn:#15803d}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1a22;--ink:#e8eef2;--mut:#98a8b4;--card:#16242e;--line:#2a3d4a;--teal:#2dd4bf;--amb:#fbbf24;--red:#f87171;--grn:#4ade80}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-main{max-width:860px;margin:0 auto;padding:20px 16px 48px}
-h1{font-size:26px;margin:0 0 4px;letter-spacing:-.4px}p.sub{margin:0 0 18px;color:var(--mut)}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-button,label.up{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer}
-button.ghost,label.up{background:transparent;color:var(--teal)}button:focus-visible,label.up:focus-within{outline:3px solid var(--amb);outline-offset:2px}
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+main{max-width:900px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:28px;margin:0 0 2px;letter-spacing:-.5px}p.sub{margin:0 0 16px;color:var(--mut)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button,label.up,a.btn,select{font:inherit;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer;text-decoration:none}
+button.g,label.up,a.btn,select{background:transparent;color:var(--teal)}select{color:var(--ink);border-color:var(--line);background:var(--card)}
+button:focus-visible,label.up:focus-within,a.btn:focus-visible,select:focus-visible{outline:3px solid var(--amb);outline-offset:2px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
 .sum div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
-.sum b{display:block;font-size:22px}.sum span{color:var(--mut);font-size:13px}
+.sum b{display:block;font-size:21px}.sum span{color:var(--mut);font-size:13px}.sum .win{border-color:var(--grn)}.sum .win b{color:var(--grn)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}.chips button{border-color:var(--line);color:var(--mut);background:transparent;border-radius:99px}
+.chips button.on{background:var(--teal);border-color:var(--teal);color:#fff}
 .row{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:12px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:6px 12px}
-.row h3{margin:0;font-size:16px}.row small{color:var(--mut)}
-.meter{grid-column:1/-1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.meter i{display:block;height:100%;background:var(--c)}
-.tag{font-weight:600;color:var(--c)}pre{grid-column:1/-1;white-space:pre-wrap;margin:0;font:inherit;background:var(--bg);border-radius:8px;padding:10px;display:none}
-.row.open pre{display:block}.empty{padding:32px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:10px}
+.row.paid{opacity:.6;border-left-color:var(--grn)}
+.row h3{margin:0;font-size:16px}.row small{color:var(--mut)}.tag{font-weight:600;color:var(--c);text-align:right}
+.meter{grid-column:1/-1;height:7px;background:var(--line);border-radius:4px;overflow:hidden}.meter i{display:block;height:100%;background:var(--c)}
+.acts{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+textarea{grid-column:1/-1;width:100%;min-height:70px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;resize:vertical}
+.empty{padding:28px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:10px}
 footer{margin-top:20px;color:var(--mut);font-size:13px}
 </style></head><body><main>
 <h1>DueSense</h1>
-<p class="sub">Upload overdue invoices. See who is most likely to pay late, and send the right reminder first.</p>
+<p class="sub">See which overdue invoices to chase first, send the right message, and track the cash you recover.</p>
 <div class="bar">
-<button id="demo">Load sample invoices</button>
+<button id="demo">Load sample</button>
 <label class="up">Upload CSV<input id="file" type="file" accept=".csv" hidden></label>
-<button class="ghost" id="tpl">Download CSV template</button></div>
-<div class="sum" id="sum"></div><div id="list"><div class="empty">No invoices yet. Load the sample or upload a CSV.</div></div>
-<footer>Runs in your browser. Nothing is uploaded. Scores use starter weights fitted on synthetic data; retrain on your own payment history before relying on them.</footer>
+<button class="g" id="tpl">Template</button>
+<button class="g" id="exp">Export</button>
+<button class="g" id="reset">Clear all</button>
+<select id="client" aria-label="Filter by client" hidden></select></div>
+<div class="sum" id="sum"></div>
+<div class="chips" id="chips"></div>
+<div id="list"></div>
+<footer>Your data stays in this browser and is never uploaded. Only customer, amount and days_overdue are required in the CSV; add phone for WhatsApp links and client to group by client. Scores use starter weights fitted on synthetic data, so treat them as a guide until retrained on real payment history.</footer>
 </main>
 <script>
-const COLS="customer,amount,days_overdue,late_share,avg_delay_days,months_as_customer";
-const W={b:-3.2,late:3.0,delay:.05,over:.03,age:-.012,amt:.15};
-const sig=z=>1/(1+Math.exp(-z));
-const inr=n=>"\u20B9"+Math.round(n).toLocaleString("en-IN");
+const KEY="duesense-v2",W={b:-3.2,late:3.0,delay:.05,over:.03,age:-.012,amt:.15};
+const sig=z=>1/(1+Math.exp(-z)),inr=n=>"\u20B9"+Math.round(n).toLocaleString("en-IN");
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function risk(r){return sig(W.b+W.late*r.late_share+W.delay*r.avg_delay_days+W.over*r.days_overdue+W.age*r.months_as_customer+W.amt*Math.log(r.amount/15000))}
-function msg(r,p){const a=inr(r.amount),n=r.customer;
-if(p<.3)return `Hi ${n}, a friendly reminder that invoice for ${a} is ${r.days_overdue} days past due. You can pay using the link below. Thank you!`;
-if(p<.6)return `Hi ${n}, invoice for ${a} is now ${r.days_overdue} days overdue. Could you confirm a payment date this week? Happy to help if there is any issue.`;
-return `Hi ${n}, invoice for ${a} is ${r.days_overdue} days overdue. Please reply with a firm payment date today, or call us to resolve any dispute. We will follow up by phone.`}
-function parse(t){const L=t.trim().split(/\r?\n/);const h=L.shift().split(",").map(s=>s.trim());
-return L.map(l=>{const c=l.split(",");const o={};h.forEach((k,i)=>o[k]=c[i]?.trim());
-["amount","days_overdue","late_share","avg_delay_days","months_as_customer"].forEach(k=>o[k]=parseFloat(o[k]));return o}).filter(o=>o.customer&&o.amount>0&&!isNaN(o.days_overdue))}
-function render(rows){const L=document.getElementById("list"),S=document.getElementById("sum");
-if(!rows.length){L.innerHTML='<div class="empty">No valid rows found. Check the columns match the template.</div>';S.innerHTML="";return}
-rows.forEach(r=>{r.p=risk(r)});rows.sort((a,b)=>b.p-a.p);
-const tot=rows.reduce((s,r)=>s+r.amount,0),exp=rows.reduce((s,r)=>s+r.amount*r.p,0),k=Math.max(1,Math.ceil(rows.length*.2));
-const top=rows.slice(0,k).reduce((s,r)=>s+r.amount*r.p,0);
-S.innerHTML=`<div><b>${inr(tot)}</b><span>Overdue in total</span></div><div><b>${inr(exp)}</b><span>Expected to stay unpaid</span></div><div><b>${Math.round(top/exp*100)}%</b><span>of that risk sits in your top ${k} invoices</span></div>`;
-L.innerHTML="";rows.forEach(r=>{const c=r.p<.3?"var(--teal)":r.p<.6?"var(--amb)":"var(--red)";
-const lab=r.p<.3?"Friendly nudge":r.p<.6?"Firm reminder":"Chase now";
-const d=document.createElement("div");d.className="row";d.style.setProperty("--c",c);
-d.innerHTML=`<div><h3></h3><small>${inr(r.amount)} \u2022 ${r.days_overdue} days overdue</small></div><div class="tag">${Math.round(r.p*100)}% risk<br><small style="color:var(--mut);font-weight:400">${lab}</small></div><div class="meter"><i style="width:${r.p*100}%"></i></div><button class="ghost">Show message</button><pre></pre>`;
-d.querySelector("h3").textContent=r.customer;d.querySelector("pre").textContent=msg(r,r.p);
-const b=d.querySelector("button");b.onclick=()=>{d.classList.toggle("open");b.textContent=d.classList.contains("open")?"Hide message":"Show message";if(d.classList.contains("open"))navigator.clipboard?.writeText(msg(r,r.p)).catch(()=>{})};
+function msg(r,p){const a=inr(r.amount),n=r.customer,pr=r.promise?` You mentioned paying by ${r.promise}; please confirm.`:"";
+if(p<.3)return `Hi ${n}, a friendly reminder that your invoice for ${a} is ${r.days_overdue} days past due.${pr} Thank you!`;
+if(p<.6)return `Hi ${n}, your invoice for ${a} is now ${r.days_overdue} days overdue.${pr||" Could you confirm a payment date this week?"} Happy to help if there is any issue.`;
+return `Hi ${n}, your invoice for ${a} is ${r.days_overdue} days overdue. Please reply with a firm payment date today, or call us to resolve any dispute.${pr}`}
+function splitLine(l){const o=[];let c="",q=false;for(const ch of l){if(ch=='"')q=!q;else if(ch==","&&!q){o.push(c);c=""}else c+=ch}o.push(c);return o.map(s=>s.trim())}
+function parse(t){const L=t.trim().split(/\r?\n/),h=splitLine(L.shift()).map(s=>s.toLowerCase().replace(/\s+/g,"_"));
+return L.map((l,i)=>{const c=splitLine(l),o={};h.forEach((k,j)=>o[k]=c[j]);const n=(k,d)=>{const v=parseFloat(o[k]);return isNaN(v)?d:v};
+return{id:Date.now()+"-"+i,client:o.client||"",customer:o.customer||"",amount:n("amount",0),days_overdue:n("days_overdue",0),late_share:n("late_share",.2),avg_delay_days:n("avg_delay_days",5),months_as_customer:n("months_as_customer",12),phone:(o.phone||"").replace(/\D/g,""),status:"open",promise:""}}).filter(r=>r.customer&&r.amount>0&&r.days_overdue>=0)}
+//DOM
+const $=id=>document.getElementById(id);let rows=[],filter="open",client="";
+try{rows=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){rows=[]}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(rows))}catch(e){}};
+function render(){
+const cl=[...new Set(rows.map(r=>r.client).filter(Boolean))],cs=$("client");cs.hidden=!cl.length;
+if(cl.length){cs.innerHTML='<option value="">All clients</option>'+cl.map(c=>`<option>${esc(c)}</option>`).join("");if(!cl.includes(client))client="";cs.value=client}else client="";
+const vis=rows.filter(r=>!client||r.client===client);vis.forEach(r=>r.p=risk(r));
+const sum=a=>a.reduce((s,r)=>s+r.amount,0),open=vis.filter(r=>r.status!=="paid"),by=s=>vis.filter(r=>r.status===s);
+$("sum").innerHTML=`<div><b>${inr(sum(open))}</b><span>Still overdue</span></div><div><b>${inr(open.reduce((s,r)=>s+r.amount*r.p,0))}</b><span>Expected to stay unpaid</span></div><div><b>${inr(sum(by("promised")))}</b><span>Promised</span></div><div class="win"><b>${inr(sum(by("paid")))}</b><span>Recovered</span></div>`;
+const F=[["open","To chase"],["promised","Promised"],["paid","Paid"],["all","All"]];
+$("chips").innerHTML="";F.forEach(([k,t])=>{const b=document.createElement("button");b.textContent=`${t} (${k==="all"?vis.length:by(k).length})`;if(k===filter)b.className="on";b.onclick=()=>{filter=k;render()};$("chips").appendChild(b)});
+const list=vis.filter(r=>filter==="all"||r.status===filter).sort((a,b)=>(a.status==="paid")-(b.status==="paid")||b.p-a.p),L=$("list");L.innerHTML="";
+if(!list.length){L.innerHTML=`<div class="empty">${rows.length?"Nothing in this view.":"No invoices yet. Tap Load sample to try it, or Upload CSV with your overdue invoices."}</div>`;return}
+list.forEach(r=>{const p=r.p,c=p<.3?"var(--teal)":p<.6?"var(--amb)":"var(--red)",lab=p<.3?"Friendly nudge":p<.6?"Firm reminder":"Chase now";
+const d=document.createElement("div");d.className="row"+(r.status==="paid"?" paid":"");d.style.setProperty("--c",c);
+d.innerHTML=`<div><h3>${esc(r.customer)}</h3><small>${r.client?esc(r.client)+" \u2022 ":""}${inr(r.amount)} \u2022 ${r.days_overdue} days overdue${r.status==="promised"?" \u2022 promised "+esc(r.promise):""}</small></div><div class="tag">${Math.round(p*100)}% risk<br><small>${lab}</small></div><div class="meter"><i style="width:${p*100}%"></i></div><textarea aria-label="Message to ${esc(r.customer)}">${esc(msg(r,p))}</textarea><div class="acts"></div>`;
+const A=d.querySelector(".acts"),T=d.querySelector("textarea");
+const add=(t,f,cls)=>{const b=document.createElement("button");b.textContent=t;if(cls)b.className=cls;b.onclick=()=>f(b);A.appendChild(b)};
+add("Copy",b=>{navigator.clipboard.writeText(T.value).then(()=>b.textContent="Copied",()=>b.textContent="Select and copy")},"g");
+if(r.phone.length>=10){const a=document.createElement("a");a.className="btn";a.textContent="WhatsApp";a.target="_blank";a.rel="noopener";a.addEventListener("click",()=>{a.href="https://wa.me/"+(r.phone.length===10?"91"+r.phone:r.phone)+"?text="+encodeURIComponent(T.value)});a.href="#";A.appendChild(a)}
+if(r.status==="open")add("Promised",()=>{const v=prompt("Promised payment date (e.g. Fri 10 Oct):");if(v){r.status="promised";r.promise=v.trim();save();render()}},"g");
+if(r.status!=="paid")add("Mark paid",()=>{r.status="paid";save();render()});else add("Reopen",()=>{r.status="open";save();render()},"g");
 L.appendChild(d)})}
-const SAMPLE=COLS+`
-Sharma Traders,84000,32,0.6,18,14
-Kiran Textiles,22000,6,0.1,3,40
-Patel Foods,156000,21,0.45,12,9
-Nova Print,9500,12,0.2,5,25
-Greenleaf Agro,64000,41,0.7,25,6
-Mehta Hardware,31000,9,0.15,4,36
-Orbit Logistics,118000,15,0.35,9,18
-Sunrise Clinic,18000,27,0.5,14,12`;
-document.getElementById("demo").onclick=()=>render(parse(SAMPLE));
-document.getElementById("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>render(parse(t)))};
-document.getElementById("tpl").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([SAMPLE],{type:"text/csv"}));a.download="duesense-template.csv";a.click()};
+const SAMPLE=`client,customer,amount,days_overdue,phone,late_share,avg_delay_days,months_as_customer
+Mehta Traders,Sharma Traders,84000,32,,0.6,18,14
+Mehta Traders,Kiran Textiles,22000,6,,0.1,3,40
+Mehta Traders,Patel Foods,156000,21,,0.45,12,9
+Joshi Hardware,Nova Print,9500,12,,0.2,5,25
+Joshi Hardware,Greenleaf Agro,64000,41,,0.7,25,6
+Joshi Hardware,Orbit Logistics,118000,15,,0.35,9,18`;
+const load=t=>{const r=parse(t);if(!r.length){alert("No valid rows. Needed columns: customer, amount, days_overdue.");return}rows=r;filter="open";save();render()};
+$("demo").onclick=()=>load(SAMPLE);
+$("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(load)};
+$("client").onchange=e=>{client=e.target.value;render()};
+const dl=(name,txt)=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv"}));a.download=name;a.click()};
+$("tpl").onclick=()=>dl("duesense-template.csv","client,customer,amount,days_overdue,phone\nMy Client,Sample Customer,45000,18,9876543210");
+$("exp").onclick=()=>{if(!rows.length)return;dl("duesense-export.csv","client,customer,amount,days_overdue,risk_percent,status,promised\n"+rows.map(r=>[r.client,r.customer,r.amount,r.days_overdue,Math.round(risk(r)*100),r.status,r.promise].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n"))};
+$("reset").onclick=()=>{if(rows.length&&confirm("Remove all saved invoices from this browser?")){rows=[];save();render()}};
+render();
 </script></body></html>
