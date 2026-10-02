@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DueSense - chase the right invoices first</title>
+<style>
+:root{--bg:#f2f5f7;--ink:#14232e;--mut:#5b6b77;--card:#fff;--line:#d9e1e7;--teal:#0f766e;--amb:#b45309;--red:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1a22;--ink:#e8eef2;--mut:#98a8b4;--card:#16242e;--line:#27394519;--teal:#2dd4bf;--amb:#fbbf24;--red:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.4px}p.sub{margin:0 0 18px;color:var(--mut)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button,label.up{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid var(--teal);background:var(--teal);color:#fff;cursor:pointer}
+button.ghost,label.up{background:transparent;color:var(--teal)}button:focus-visible,label.up:focus-within{outline:3px solid var(--amb);outline-offset:2px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.sum div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.sum b{display:block;font-size:22px}.sum span{color:var(--mut);font-size:13px}
+.row{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:12px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:6px 12px}
+.row h3{margin:0;font-size:16px}.row small{color:var(--mut)}
+.meter{grid-column:1/-1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.meter i{display:block;height:100%;background:var(--c)}
+.tag{font-weight:600;color:var(--c)}pre{grid-column:1/-1;white-space:pre-wrap;margin:0;font:inherit;background:var(--bg);border-radius:8px;padding:10px;display:none}
+.row.open pre{display:block}.empty{padding:32px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:10px}
+footer{margin-top:20px;color:var(--mut);font-size:13px}
+</style></head><body><main>
+<h1>DueSense</h1>
+<p class="sub">Upload overdue invoices. See who is most likely to pay late, and send the right reminder first.</p>
+<div class="bar">
+<button id="demo">Load sample invoices</button>
+<label class="up">Upload CSV<input id="file" type="file" accept=".csv" hidden></label>
+<button class="ghost" id="tpl">Download CSV template</button></div>
+<div class="sum" id="sum"></div><div id="list"><div class="empty">No invoices yet. Load the sample or upload a CSV.</div></div>
+<footer>Runs in your browser. Nothing is uploaded. Scores use starter weights fitted on synthetic data; retrain on your own payment history before relying on them.</footer>
+</main>
+<script>
+const COLS="customer,amount,days_overdue,late_share,avg_delay_days,months_as_customer";
+const W={b:-3.2,late:3.0,delay:.05,over:.03,age:-.012,amt:.15};
+const sig=z=>1/(1+Math.exp(-z));
+const inr=n=>"\u20B9"+Math.round(n).toLocaleString("en-IN");
+function risk(r){return sig(W.b+W.late*r.late_share+W.delay*r.avg_delay_days+W.over*r.days_overdue+W.age*r.months_as_customer+W.amt*Math.log(r.amount/15000))}
+function msg(r,p){const a=inr(r.amount),n=r.customer;
+if(p<.3)return `Hi ${n}, a friendly reminder that invoice for ${a} is ${r.days_overdue} days past due. You can pay using the link below. Thank you!`;
+if(p<.6)return `Hi ${n}, invoice for ${a} is now ${r.days_overdue} days overdue. Could you confirm a payment date this week? Happy to help if there is any issue.`;
+return `Hi ${n}, invoice for ${a} is ${r.days_overdue} days overdue. Please reply with a firm payment date today, or call us to resolve any dispute. We will follow up by phone.`}
+function parse(t){const L=t.trim().split(/\r?\n/);const h=L.shift().split(",").map(s=>s.trim());
+return L.map(l=>{const c=l.split(",");const o={};h.forEach((k,i)=>o[k]=c[i]?.trim());
+["amount","days_overdue","late_share","avg_delay_days","months_as_customer"].forEach(k=>o[k]=parseFloat(o[k]));return o}).filter(o=>o.customer&&o.amount>0&&!isNaN(o.days_overdue))}
+function render(rows){const L=document.getElementById("list"),S=document.getElementById("sum");
+if(!rows.length){L.innerHTML='<div class="empty">No valid rows found. Check the columns match the template.</div>';S.innerHTML="";return}
+rows.forEach(r=>{r.p=risk(r)});rows.sort((a,b)=>b.p-a.p);
+const tot=rows.reduce((s,r)=>s+r.amount,0),exp=rows.reduce((s,r)=>s+r.amount*r.p,0),k=Math.max(1,Math.ceil(rows.length*.2));
+const top=rows.slice(0,k).reduce((s,r)=>s+r.amount*r.p,0);
+S.innerHTML=`<div><b>${inr(tot)}</b><span>Overdue in total</span></div><div><b>${inr(exp)}</b><span>Expected to stay unpaid</span></div><div><b>${Math.round(top/exp*100)}%</b><span>of that risk sits in your top ${k} invoices</span></div>`;
+L.innerHTML="";rows.forEach(r=>{const c=r.p<.3?"var(--teal)":r.p<.6?"var(--amb)":"var(--red)";
+const lab=r.p<.3?"Friendly nudge":r.p<.6?"Firm reminder":"Chase now";
+const d=document.createElement("div");d.className="row";d.style.setProperty("--c",c);
+d.innerHTML=`<div><h3></h3><small>${inr(r.amount)} \u2022 ${r.days_overdue} days overdue</small></div><div class="tag">${Math.round(r.p*100)}% risk<br><small style="color:var(--mut);font-weight:400">${lab}</small></div><div class="meter"><i style="width:${r.p*100}%"></i></div><button class="ghost">Show message</button><pre></pre>`;
+d.querySelector("h3").textContent=r.customer;d.querySelector("pre").textContent=msg(r,r.p);
+const b=d.querySelector("button");b.onclick=()=>{d.classList.toggle("open");b.textContent=d.classList.contains("open")?"Hide message":"Show message";if(d.classList.contains("open"))navigator.clipboard?.writeText(msg(r,r.p)).catch(()=>{})};
+L.appendChild(d)})}
+const SAMPLE=COLS+`
+Sharma Traders,84000,32,0.6,18,14
+Kiran Textiles,22000,6,0.1,3,40
+Patel Foods,156000,21,0.45,12,9
+Nova Print,9500,12,0.2,5,25
+Greenleaf Agro,64000,41,0.7,25,6
+Mehta Hardware,31000,9,0.15,4,36
+Orbit Logistics,118000,15,0.35,9,18
+Sunrise Clinic,18000,27,0.5,14,12`;
+document.getElementById("demo").onclick=()=>render(parse(SAMPLE));
+document.getElementById("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>render(parse(t)))};
+document.getElementById("tpl").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([SAMPLE],{type:"text/csv"}));a.download="duesense-template.csv";a.click()};
+</script></body></html>
